@@ -1,6 +1,5 @@
 import tkinter as tk
 from group_2_data_generator import DataGenerator
-from group_2_display_bar_email_service import TemperatureBar
 
 class DisplayChar:
     def __init__(self, main):
@@ -10,15 +9,13 @@ class DisplayChar:
         self.main.geometry("500x350")
         self.main.configure(bg='#f0f0f0')
 
-        # Temperature range from TemperatureBar class
-        self.min_temp = TemperatureBar.min_temp
-        self.max_temp = TemperatureBar.max_temp
-        
         # Generate initial temperature data from instance of DataGenerator class
         self.data_generator = DataGenerator()
         self.all_data = [self.data_generator.value for _ in range(20)]
         self.current_start = 0 # starting index for data range
-
+        # Temperature range from data_generator class
+        self.min_temp = self.data_generator.min_value
+        self.max_temp = self.data_generator.max_value
         self.create_widgets() # Create UI elements
         self.draw_rectangles_and_lines() # Draw rectangles and lines graph
         
