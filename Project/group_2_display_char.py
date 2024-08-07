@@ -11,7 +11,7 @@ class DisplayChar:
         self.main.configure(bg='#f0f0f0')
 
         # Generate initial temperature data from instance of DataGenerator class
-        self.data_generator = DataGenerator(min_value=16, max_value=26)
+        self.data_generator = DataGenerator(min_value=0, max_value=14)
         self.all_data = [self.data_generator.value for _ in range(20)]
         self.current_start = 0  # starting index for data range
         # Temperature range from data_generator class
@@ -86,7 +86,7 @@ class DisplayChar:
         value = self.entry.get()
         try:
             # Convert the input to an integer and ensure it is within the valid range
-            start_value = max(0, min(14, int(value)))
+            start_value = max(self.min_temp, min(self.max_temp, int(value)))
             self.error_label.config(text="")
             print(self.min_temp, self.max_temp, int(value))
             if self.min_temp <= int(value) <= self.max_temp:
