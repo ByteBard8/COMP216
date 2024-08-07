@@ -1,6 +1,7 @@
 import tkinter as tk
 from group_2_data_generator import DataGenerator
 
+
 class DisplayChar:
     def __init__(self, main):
         # initialize main window properties
@@ -10,27 +11,27 @@ class DisplayChar:
         self.main.configure(bg='#f0f0f0')
 
         # Generate initial temperature data from instance of DataGenerator class
-        self.data_generator = DataGenerator()
+        self.data_generator = DataGenerator(min_value=16, max_value=26)
         self.all_data = [self.data_generator.value for _ in range(20)]
-        self.current_start = 0 # starting index for data range
+        self.current_start = 0  # starting index for data range
         # Temperature range from data_generator class
         self.min_temp = self.data_generator.min_value
         self.max_temp = self.data_generator.max_value
-        self.create_widgets() # Create UI elements
-        self.draw_rectangles_and_lines() # Draw rectangles and lines graph
-        
+        self.create_widgets()  # Create UI elements
+        self.draw_rectangles_and_lines()  # Draw rectangles and lines graph
+
     def create_widgets(self):
         # Create and pack UI elements
         top_frame = tk.Frame(self.main, bg='#f0f0f0')
         top_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-        
+
         self.label = tk.Label(top_frame, text="Temperature range: ", bg='#f0f0f0')
         self.label.pack(side=tk.LEFT, padx=5)
-        
+
         # Component to enter the starting index of the data range
         self.entry = tk.Entry(top_frame)
         self.entry.pack(side=tk.LEFT, padx=5)
-        
+
         # Button to update the displayed data range
         self.button = tk.Button(top_frame, text="Go", command=self.on_button_click, width=10)
         self.button.pack(side=tk.LEFT, padx=5)
@@ -42,7 +43,7 @@ class DisplayChar:
         # Label to display error messages
         self.error_label = tk.Label(self.main, text="", fg="red", bg='#f0f0f0')
         self.error_label.pack(side=tk.TOP, fill=tk.X, padx=10)
-        
+
     def draw_rectangles_and_lines(self):
         # Clear canvas if it already exists
         if hasattr(self, 'canvas'):
@@ -51,10 +52,10 @@ class DisplayChar:
         # Create canvas for drawing rectangles and lines
         self.canvas = tk.Canvas(self.main, width=500, height=200, bg='#ffffff')
         self.canvas.pack(fill=tk.BOTH, expand=True)
-        
-        bar_width = 60 # Width of each bar
-        spacing = 10 # Spacing between bars
-        max_height = 200 # Maximum height of the bars
+
+        bar_width = 60  # Width of each bar
+        spacing = 10  # Spacing between bars
+        max_height = 200  # Maximum height of the bars
 
         # Get the current data range
         current_data = self.all_data[self.current_start:self.current_start + 6]
@@ -79,7 +80,7 @@ class DisplayChar:
                 curr_y = y1
 
                 self.canvas.create_line(prev_x, prev_y, curr_x, curr_y, fill="red", width=2)
-        
+
     def on_button_click(self):
         # Handle button click event
         value = self.entry.get()
@@ -87,19 +88,25 @@ class DisplayChar:
             # Convert the input to an integer and ensure it is within the valid range
             start_value = max(0, min(14, int(value)))
             self.error_label.config(text="")
+            print(self.min_temp, self.max_temp, int(value))
+            if self.min_temp <= int(value) <= self.max_temp:
+                pass
+            else:
+               raise ValueError
         except ValueError:
             # If the input is not a valid integer, set the start value to 0
             start_value = 0
-            self.error_label.config(text="Invalid input. Please enter a number between 0 and 14.")
-        
+            self.error_label.config(text=f"Invalid input. Please enter a number between {self.min_temp} and {self.max_temp}.")
+
         self.current_start = start_value
         range_text = f"Data range: {start_value} - {start_value + 5}"
         self.range_label.config(text=range_text)
 
-        self.draw_rectangles_and_lines() # Redraw the rectangles and lines
+        self.draw_rectangles_and_lines()  # Redraw the rectangles and lines
+
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = DisplayChar(root)
-    root.protocol("WM_DELETE_WINDOW", root.quit) # Handle window close event
+    root.protocol("WM_DELETE_WINDOW", root.quit)  # Handle window close event
     root.mainloop()
