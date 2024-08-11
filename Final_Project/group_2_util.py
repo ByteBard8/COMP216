@@ -15,7 +15,7 @@ class Util:
         self.start_id += 1
         platform_processor = platform.processor()
         current_temp = generator.value
-        current_feels_like = random.gauss(current_temp)
+        current_feels_like = random.gauss(current_temp, 1)
         latitude = random.uniform(-90.0, 90.0)
         longitude = random.uniform(-180.0, 180.0)
         humidity = random.randint(0, 100)
