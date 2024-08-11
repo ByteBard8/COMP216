@@ -23,7 +23,7 @@ class Util:
         temp_min = random.uniform(generator.min_value, current_temp)
         temp_max = random.uniform(current_temp, generator.max_value)
         unit = 'deg C'
-        self.data = {'id': self.start_id,
+        self.data = {'packet_id': self.start_id,
                      'time': asctime(),
                      'platform': platform_processor,
                      'location': {
