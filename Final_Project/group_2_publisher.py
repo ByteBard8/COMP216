@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 from paho.mqtt.properties import Properties
 from paho.mqtt.packettypes import PacketTypes
-from random import randint
+from random import randint, choice
 import time
 import json
 
@@ -55,16 +55,35 @@ client_pub.connect(BROKER, PORT, properties=con_properties)
 client_pub.loop_start()
 
 counter = 0
+
+#return randomly a list of garbase value denoting invalid tranmissions
+#this signfies transmission error
+def fn_return_garbage_value(data):
+    return choice([0,-1,100])
+
+
+#return 100 which is way out of range value but still follow the json structure
+#this signifies an error in reading data from sensor
+def fn_return_out_of_range_value(data):
+    data["temperature"]["current"] = 100
+    return data
+
+
 while True:
     data = util.create_data(datagenerator)
     data_formatted = json.dumps(data)
-    counter += 1
-    client_pub.publish('data/temp', data_formatted, properties=publ_properties, qos=2, retain=True)
+    counter += 1    #to track number of transmissions
+    if counter % 10 == 0:   #if x transmissions reached we invoke disruption
+        my_list = [fn_return_out_of_range_value, fn_return_garbage_value]   #define list of modifiers
+        modified_data = choice(my_list)(data)   #choose a list of modifiers and pass our data
+        data_formatted = json.dumps(modified_data)
+    client_pub.publish('data/temp', data_formatted, properties=publ_properties, qos=2, retain=True) #publish valid data
     print(f'Publishing data: {data_formatted}')
-    # if counter % 10 == 0:
-    #     print('A')
+
     time.sleep(2)
-    # client_pub.disconnect()
-    # print('Publisher disconnect')
+
+
+client_pub.disconnect()
+print('Publisher disconnect')
 
 
