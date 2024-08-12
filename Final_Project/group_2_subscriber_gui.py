@@ -3,7 +3,10 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import threading
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import queue
+from group_2_email_client import EmailClient
 
 # GUI Application
 class SubscriberApp:
@@ -23,6 +26,16 @@ class SubscriberApp:
 
         # List to store received data for plotting
         self.data_list = []
+
+        # Initialize email client
+        self.email_client = EmailClient(
+            gmail_sender_email="networkinggroupnumber2@gmail.com",
+            gmail_password="iglm mkcl xvxc urvb"
+        )
+
+        # Define acceptable temperature range
+        self.min_temp = 16
+        self.max_temp = 26
 
         # Start MQTT client in a separate thread
         threading.Thread(target=self.start_mqtt, daemon=True).start()
@@ -47,7 +60,9 @@ class SubscriberApp:
         self.stop_button = tk.Button(self.root, text="Unsubscribe", command=self.unsubscribe, width=10, bg="yellow", activebackground="white")
         self.stop_button.pack(pady=40)
 
-        #self.data_listbox.bind("<configure>", self.update_listbox)
+        # Create a figure for data visualization
+        self.figure = Figure(figsize=(5, 3), dpi=100)
+        self.plot = self.figure.add_subplot(1, 1, 1)
 
         # Create frame for plotting data and labels
         frame = tk.Frame(self.root)
@@ -121,6 +136,10 @@ class SubscriberApp:
                 return
             
         try:
+            # Check for required keys in the data
+            if 'temperature' not in data or 'current' not in data['temperature'] or 'packet_id' not in data:
+                raise KeyError("Missing required data keys")
+
             current_temp = data['temperature']['current']
             packet_id = data['packet_id']
 
@@ -130,6 +149,9 @@ class SubscriberApp:
                 self.handle_error(f"Temperature out of range: {current_temp}")
                 return
 
+            # Check if the temperature is within the acceptable range
+            if not (self.min_temp <= current_temp <= self.max_temp):
+                raise ValueError(f"Temperature {current_temp}°C out of range ({self.min_temp}-{self.max_temp}°C)")
 
             self.data_list.append({'packet_id': data['packet_id'], 'value': current_temp})
             self.data_listbox.insert(0, f"ID: {data['packet_id']}, Value: {current_temp}. Message={data}")
@@ -160,7 +182,7 @@ class SubscriberApp:
 
         if len(packet_ids) == 1:
             return
-        
+
         min_packet_id, max_packet_id = min(packet_ids), max(packet_ids)
         min_value, max_value = min(values), max(values)
 
@@ -169,14 +191,14 @@ class SubscriberApp:
             if max_value == min_value:
                 return canvas_size / 2
             return padding + (value - min_value) / (max_value - min_value) * (canvas_size - 2 * padding)
-        
+
         # Draw the plot
         for i in range(len(packet_ids) - 1):
             x0 = normalize(packet_ids[i], min_packet_id, max_packet_id, max_width)
             y0 = max_height - normalize(values[i], min_value, max_value, max_height)
             x1 = normalize(packet_ids[i + 1], min_packet_id, max_packet_id, max_width)
             y1 = max_height - normalize(values[i + 1], min_value, max_value, max_height)
-            
+
             self.canvas.create_line(x0, y0, x1, y1, fill="red")
             self.canvas.create_oval(x0 - 2, y0 - 2, x0 + 2, y0 + 2, fill="blue")
             self.canvas.create_text(x0+10, y0+10, text=values[i], fill="blue")
