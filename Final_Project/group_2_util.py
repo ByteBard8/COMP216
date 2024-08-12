@@ -25,7 +25,6 @@ class Util:
         unit = 'deg C'
         self.data = {'packet_id': self.start_id,
                      'time': asctime(),
-                     'platform': platform_processor,
                      'location': {
                          'lat': latitude,
                          'lng': longitude

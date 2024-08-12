@@ -9,14 +9,15 @@ import queue
 class SubscriberApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("MQTT Subscriber")
+        self.root.title("Temperature Monitor Dashboard")
         self.root.geometry("700x600")
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
         self.create_widgets()
-
+        self.min_temp = 16
+        self.max_temp = 28
         # Queue for thread-safe communication between MQTT callback and Tkinter GUI
         self.queue = queue.Queue()
 
@@ -31,7 +32,9 @@ class SubscriberApp:
 
     def create_widgets(self):
         # Create a label for connection status
-        self.status_label = tk.Label(self.root, text="Connecting to broker...", fg="blue")
+        self.status_label = tk.Label(self.root, text="Temperature Monitor Dashboard", fg="indigo", font=('Arial', 20))
+        self.status_label.pack(pady=10)
+        self.status_label = tk.Label(self.root, text="Connecting to broker...", fg="blue", font=('Arial', 14))
         self.status_label.pack(pady=10)
         self.topic_label = tk.Label(self.root, text="Enter topic here:")
         self.topic_label.pack()
@@ -40,40 +43,39 @@ class SubscriberApp:
         self.topic_entry.pack()
         self.go_button = tk.Button(self.root, text="Subscribe", command=self.subscribe, width=10, bg="green",
                                    activebackground="white")
-        self.go_button.pack(pady=10)
+        self.go_button.pack(pady=40)
         self.stop_button = tk.Button(self.root, text="Unsubscribe", command=self.unsubscribe, width=10, bg="yellow", activebackground="white")
-        self.stop_button.pack(pady=10)
-        # Create a listbox to display received data
-        self.data_listbox = tk.Listbox(self.root, width=50, height=10)
-        self.data_listbox.pack(pady=10)
+        self.stop_button.pack(pady=40)
 
         #self.data_listbox.bind("<configure>", self.update_listbox)
 
         # Create frame for plotting data and labels
         frame = tk.Frame(self.root)
-        frame.pack(pady=10)
-        
+        frame.pack(pady=20)
+
         # Create a title label for the plot
         self.title_label = tk.Label(frame, text="Data Values Over Time", font=("Arial", 12, "bold"))
         self.title_label.pack()
 
-        self.y_label = tk.Label(frame, text="Temperature", font=("Arial", 10))
+        self.y_label = tk.Label(frame, text="°C", font=("Arial", 10))
         self.y_label.pack(side=tk.LEFT)
 
-        self.x_label = tk.Label(frame, text="Packet ID", font=("Arial", 10))
+        self.x_label = tk.Label(frame, text="Pkt ID", font=("Arial", 10))
         self.x_label.pack(side=tk.BOTTOM)
-        # width = self.root.winfo_width()
-        # height = self.root.winfo_height()
-        # print(width, height)
+
         self.canvas = tk.Canvas(frame, width=500, height=300, bg='#FFEFFF')
-        self.canvas.pack()    
+        self.canvas.pack()
+
+        # Create a listbox to display received data
+        self.data_listbox = tk.Listbox(self.root, width=500, height=10)
+        self.data_listbox.pack(padx=20, pady=20, side=tk.BOTTOM )
 
     def start_mqtt(self):
         self.client.connect(BROKER, PORT, 60)
         self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
-        self.status_label.config(text="Connected to broker", fg="green")
+        self.status_label.config(text="Connected to broker", fg="blue")
 
 
     def on_disconnect(self,client, userdata, rc):
@@ -83,6 +85,7 @@ class SubscriberApp:
     def subscribe(self):
         print(f"subscribing new topic:\t{str(self.topic_var.get())}")
         self.client.subscribe(str(self.topic_var.get()))
+        self.status_label.config(text=f"Subscribed to {str(self.topic_var.get())}", fg="green")
 
     def unsubscribe(self):
         self.client.unsubscribe((str(self.topic_var.get())))
@@ -94,7 +97,7 @@ class SubscriberApp:
             self.queue.put(payload)
         except json.JSONDecodeError as e:
             print("Error decoding JSON:", e)
-            self.data_listbox.insert(tk.END, f"====Error decoding JSON data")
+            self.data_listbox.insert(0, f"====Error decoding JSON data")
 
     def process_queue(self):
         try:
@@ -110,7 +113,7 @@ class SubscriberApp:
     def process_data(self, data):
         required_keys = ['packet_id', 'temperature']
         if isinstance(data, int):
-            self.data_listbox.insert(tk.END, f"====Value {data} received. Possible transmission failure.")
+            self.data_listbox.insert(0, f"====Value {data} received. Possible transmission failure.")
             return
         for key in required_keys:
             if key not in data:
@@ -121,26 +124,24 @@ class SubscriberApp:
             current_temp = data['temperature']['current']
             packet_id = data['packet_id']
 
-            min_temp = 16
-            max_temp = 28
 
-            if not (min_temp <= current_temp <= max_temp):
-                self.data_listbox.insert(tk.END, f"==============ID: {packet_id}, Value: {current_temp} (out of range)")
+            if not (self.min_temp <= current_temp <= self.max_temp):
+                self.data_listbox.insert(0, f"==============ID: {packet_id}, Value: {current_temp} (out of range)")
                 self.handle_error(f"Temperature out of range: {current_temp}")
                 return
 
 
             self.data_list.append({'packet_id': data['packet_id'], 'value': current_temp})
-            self.data_listbox.insert(tk.END, f"ID: {data['packet_id']}, Value: {current_temp}")
+            self.data_listbox.insert(0, f"ID: {data['packet_id']}, Value: {current_temp}. Message={data}")
             if len(self.data_list) > 10:
                 self.data_list.pop(0)
             self.update_plot()
 
         except KeyError as e:
-            self.data_listbox.insert(tk.END, f"==============ID: {data.get('packet_id', 'N/A')}, Value: N/A (error)")
+            self.data_listbox.insert(0, f"==============ID: {data.get('packet_id', 'N/A')}, Value: N/A (error)")
             self.handle_error(f"Data missing key: {e}")
         except Exception as e:
-            self.data_listbox.insert(tk.END, f"==============ID: {data.get('packet_id', 'N/A')}, Value: N/A (error)")
+            self.data_listbox.insert(0, f"==============ID: {data.get('packet_id', 'N/A')}, Value: N/A (error)")
             self.handle_error(f"Error processing data: {e}")
 
     def update_plot(self):
@@ -149,7 +150,7 @@ class SubscriberApp:
         if not self.data_list:
             return
 
-        max_height = 200
+        max_height = 250
         max_width = 500
         padding = 10
 
@@ -178,7 +179,7 @@ class SubscriberApp:
             
             self.canvas.create_line(x0, y0, x1, y1, fill="red")
             self.canvas.create_oval(x0 - 2, y0 - 2, x0 + 2, y0 + 2, fill="blue")
-            self.canvas.create_text(x0+5, y0+5, text=values[i], fill="blue")
+            self.canvas.create_text(x0+10, y0+10, text=values[i], fill="blue")
 
     def handle_error(self, message):
         messagebox.showwarning("Data Error", message)
