@@ -96,9 +96,9 @@ class EmailClient:
         )
 
         # Example usage of sending via SES
-        self.send_email_via_ses(
-            source_email="amasalbekov12@gmail.com",
-            recipient_email="amasalbekov12@gmail.com",
-            subject=subject,
-            body=text
-        )
+        # self.send_email_via_ses(
+        #     source_email="amasalbekov12@gmail.com",
+        #     recipient_email="amasalbekov12@gmail.com",
+        #     subject=subject,
+        #     body=text
+        # )

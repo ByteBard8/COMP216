@@ -205,6 +205,7 @@ class SubscriberApp:
 
     def handle_error(self, message):
         messagebox.showwarning("Data Error", message)
+        self.email_client.send_email(message)
 
 # MQTT broker and port settings
 BROKER = 'localhost'
