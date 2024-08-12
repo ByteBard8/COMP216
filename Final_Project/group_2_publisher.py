@@ -65,7 +65,10 @@ def fn_return_garbage_value(data):
 #return 100 which is way out of range value but still follow the json structure
 #this signifies an error in reading data from sensor
 def fn_return_out_of_range_value(data):
-    data["temperature"]["current"] = 100
+    data["temperature"]["current"] = choice([100,0])
+    return data
+
+def fn_return_same(data):
     return data
 
 
@@ -74,7 +77,7 @@ while True:
     data_formatted = json.dumps(data)
     counter += 1    #to track number of transmissions
     if counter % 10 == 0:   #if x transmissions reached we invoke disruption
-        my_list = [fn_return_out_of_range_value, fn_return_garbage_value]   #define list of modifiers
+        my_list = [fn_return_out_of_range_value, fn_return_garbage_value, fn_return_same]   #define list of modifiers
         modified_data = choice(my_list)(data)   #choose a list of modifiers and pass our data
         data_formatted = json.dumps(modified_data)
     client_pub.publish('data/temp', data_formatted, properties=publ_properties, qos=2, retain=True) #publish valid data
